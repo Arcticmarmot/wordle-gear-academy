@@ -1,9 +1,13 @@
 #![no_std]
 use game_session_io::*;
 use gstd::{exec, msg, prelude::*, ActorId, MessageId};
+extern crate wordle_io;
+use wordle_io::{Action, Event};
 
 static mut SESSION: Option<Session> = None;
-const WAIT_BLOCKS: u8 = 3;
+const WAIT_BLOCKS: u8 = 2;
+const ATTEMPT_TIMES: u8 = 2;
+
 #[no_mangle]
 extern "C" fn init() {
     let target_program_id = msg::load().expect("Unable to decode Init");
@@ -11,7 +15,7 @@ extern "C" fn init() {
         SESSION = Some(Session {
             target_program_id,
             msg_ids: (MessageId::zero(), MessageId::zero()),
-            session_status: SessionStatus::UnExisted,
+            session_status: None,
         });
     }
 }
@@ -22,10 +26,10 @@ extern "C" fn handle() {
     let action: SessionAction = msg::load().expect("Unable to decode `Action`");
     
     match &session.session_status {
-        SessionStatus::UnExisted => {
+        None => {
             match action {
                 SessionAction::StartGame { user} => {
-                    let msg_id = msg::send(session.target_program_id, action, 0)
+                    let msg_id = msg::send(session.target_program_id, Event::GameStarted { user }, 0)
                     .expect("Error in sending a message");
                     session.msg_ids = (msg_id, msg::id());
                     exec::wait();
@@ -36,29 +40,36 @@ extern "C" fn handle() {
                 }
             }
         }
-        SessionStatus::GameStart { user: ActorId } => {
-            msg::send_delayed(exec::program_id(), SessionAction::CheckGameStatus, 0, WAIT_BLOCKS.into())
+        Some(SessionStatus::GameStart { user: ActorId }) => {
+            msg::send_delayed(exec::program_id(), SessionAction::CheckGameStatus { user }, 0, WAIT_BLOCKS.into())
                 .expect("Error in sending a message");
-            msg::reply(SessionEvent::AlreadyStarted { info: String::from("The game is already started")}, 0)
+            msg::reply(SessionEvent::AlreadyStarted { info: String::from("The game has already started")}, 0)
             .expect("Unable to replay msg");
-            session.session_status = SessionStatus::Gaming;
+            session.session_status = Some(SessionStatus::Gaming);
         }
-        SessionStatus::Gaming => {
+        Some(SessionStatus::Gaming) => {
             match action {
                 SessionAction::StartGame { user} => {
+
                 }
                 SessionAction::CheckWord { user, word } => {
 
                 }
-                SessionAction::CheckGameStatus => {
+                SessionAction::CheckGameStatus { user } => {
 
                 }
             }
         }
-        SessionStatus::GameOver => {
-
+        Some(SessionStatus::GameOver) => {
+            
         }
-        
+    }
+    unsafe {
+        SESSION = Some(Session {
+            target_program_id: session.target_program_id,
+            msg_ids: session.msg_ids,
+            session_status: session.session_status.clone(),
+        });
     }
 }
 
@@ -72,6 +83,7 @@ extern "C" fn handle_reply() {
         match reply_message {
             Event::GameStarted { user } => {
                 let original_message_id = session.msg_ids.1;
+                session.session_status = Some(SessionStatus::GameStart { user });
                 exec::wake(original_message_id).expect("Failed to wake message");
             }
             Event::WordChecked { user, correct_positions, contained_in_word } => {
@@ -83,5 +95,6 @@ extern "C" fn handle_reply() {
 
 #[no_mangle]
 extern "C" fn state() {
-    
+    let session = unsafe { SESSION.take().expect("State is not existing") };
+    msg::reply(session, 0).expect("Unable to get the state");
 }

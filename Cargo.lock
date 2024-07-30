@@ -1762,6 +1762,7 @@ dependencies = [
  "gear-wasm-builder",
  "gstd",
  "gtest",
+ "wordle-io",
 ]
 
 [[package]]

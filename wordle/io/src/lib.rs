@@ -26,7 +26,6 @@ pub enum Action {
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
-
 pub enum Event {
     GameStarted {
         user: ActorId,
