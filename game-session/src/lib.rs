@@ -1,6 +1,6 @@
 #![no_std]
 use game_session_io::*;
-use gstd::{exec, msg, prelude::*, ActorId};
+use gstd::{exec, msg, prelude::*, ActorId, MessageId};
 
 static mut SESSION: Option<Session> = None;
 const WAIT_BLOCKS: u8 = 3;
@@ -24,31 +24,33 @@ extern "C" fn handle() {
     match &session.session_status {
         SessionStatus::UnExisted => {
             match action {
-                Action::StartGame { user} => {
+                SessionAction::StartGame { user} => {
                     let msg_id = msg::send(session.target_program_id, action, 0)
                     .expect("Error in sending a message");
                     session.msg_ids = (msg_id, msg::id());
                     exec::wait();
                 }
                 _ => {
-                    msg::reply(SessionEvent::UnStarted { info: String::from("The game is unexisted") }, 0);
+                    msg::reply(SessionEvent::UnStarted { info: String::from("The game is unexisted") }, 0)
+                    .expect("Unable to reply msg");
                 }
             }
         }
         SessionStatus::GameStart { user: ActorId } => {
-            msg::send_delayed(exec::program_id(), SessionAction::CheckGameStatus, 0, WAIT_BLOCKS)
+            msg::send_delayed(exec::program_id(), SessionAction::CheckGameStatus, 0, WAIT_BLOCKS.into())
                 .expect("Error in sending a message");
-            msg::reply(SessionEvent::AlreadyStarted { info: String::from("The game is already started, and user_id is " + user)}, 0);
+            msg::reply(SessionEvent::AlreadyStarted { info: String::from("The game is already started")}, 0)
+            .expect("Unable to replay msg");
             session.session_status = SessionStatus::Gaming;
         }
         SessionStatus::Gaming => {
             match action {
-                Action::StartGame { user} => {
+                SessionAction::StartGame { user} => {
                 }
-                Action::CheckWord { user, word } => {
+                SessionAction::CheckWord { user, word } => {
 
                 }
-                Action::CheckGameStatus => {
+                SessionAction::CheckGameStatus => {
 
                 }
             }
