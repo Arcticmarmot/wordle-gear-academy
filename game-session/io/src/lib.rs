@@ -29,27 +29,58 @@ pub enum SessionAction {
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
+pub enum GameResult {
+    Win,
+    Lose
+}
+
+#[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub enum SessionEvent {
-    UnStarted { info: String },
-    AlreadyStarted { info: String }
+    UnStarted {
+        user: ActorId,
+        info: String
+    },
+    AlreadyStarted {
+        user: ActorId,
+        info: String 
+    },
+    GameStarted {
+        user: ActorId,
+    },
+    WordChecked {
+        user: ActorId,
+        correct_positions: Vec<u8>,
+        contained_in_word: Vec<u8>,
+    },
+    GameOver {
+        user: ActorId,
+        result: GameResult
+    }
+}
+
+#[derive(Debug, Clone, Encode, Decode, TypeInfo)]
+pub enum SessionStatus {
+    GameInit,
+    GameStart { 
+        user: ActorId
+    },
+    Gaming {
+        user: ActorId,
+        correct_positions: Vec<u8>,
+        contained_in_word: Vec<u8>,
+    },
+    GameOver {
+        user: ActorId,
+        result: GameResult
+    },
 }
 
 type SentMessageId = MessageId;
 type OriginalMessageId = MessageId;
 
-#[derive(Debug, Default, Clone, Encode, Decode, TypeInfo)]
-pub enum SessionStatus {
-    #[default]
-    Gaming,
-    GameOver,
-    GameStart{ 
-        user: ActorId
-    },
-}
-
-#[derive(Debug, Default, Clone, Encode, Decode, TypeInfo)]
+#[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub struct Session {
     pub target_program_id: ActorId,
     pub msg_ids: (SentMessageId, OriginalMessageId),
-    pub session_status: Option<SessionStatus>,
+    pub session_status: SessionStatus,
 }
