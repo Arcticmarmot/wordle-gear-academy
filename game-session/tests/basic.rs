@@ -20,9 +20,14 @@ fn test() {
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
     assert!(!init_proxy_program_result.main_failed());
 
+    // USER1 未开始游戏直接猜测
+    let check_word_result = proxy_program.send(USER1, SessionAction::CheckWord { user: USER1.into(), word: String::from("huodd") });
+    assert!(check_word_result.main_failed()); // 报错
+
     // USER1 开始游戏
     let start_result = proxy_program.send(USER1, SessionAction::StartGame {user: USER1.into()});
     assert!(!start_result.main_failed());
+
 
     // USER1 第一次猜测
     let check_word_result = proxy_program.send(USER1, SessionAction::CheckWord { user: USER1.into(), word: String::from("huodd") });
@@ -30,6 +35,10 @@ fn test() {
 
     let check_word_result = proxy_program.send(USER1, SessionAction::CheckWord { user: USER1.into(), word: String::from("huodd") });
     assert!(!check_word_result.main_failed());
+
+    // USER1 猜测中途再次开始游戏 游戏成功重置
+    // let start_result = proxy_program.send(USER1, SessionAction::StartGame {user: USER1.into()});
+    // assert!(!start_result.main_failed());
 
     let check_word_result = proxy_program.send(USER1, SessionAction::CheckWord { user: USER1.into(), word: String::from("huodd") });
     assert!(!check_word_result.main_failed());

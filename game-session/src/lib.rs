@@ -50,32 +50,50 @@ extern "C" fn handle() {
                     debug!("===WAITING AND CHECK WORD===");
                     let query_user = user.clone();
                     let current_game_status = game_status_map.get(&query_user).expect("Unable to get user");
-                    if current_game_status.left_attempts <= 0 {
-                        debug!("===*******************===");
-                        return;
+                    match current_game_status.game_result {
+                        Some(GameResult::Win) | Some(GameResult::Lose) => {
+                            debug!("===GAME RESULT IS FIXED===");
+                            let session_event = SessionEvent::GameStatus(current_game_status.clone());
+                            debug!("---SESSION EVENT: {:?}---", session_event);
+                            msg::reply(session_event, 0).expect("Unable to reply");
+                        }
+                        None => {
+                            if current_game_status.left_seconds > 0 {
+                                let msg_id = msg::send(session.target_program_id, Action::CheckWord { user, word }, 0)
+                                    .expect("Error in sending a message");
+                                session.msg_ids = (msg_id, msg::id());
+                                session.session_status = SessionStatus::MessageSent;
+                                debug!("---SESSION: {:?}---", session);
+                                exec::wait();
+                            } else {
+                                debug!("===TIME IS OVER===");
+                                let session_event = SessionEvent::GameStatus(current_game_status.clone());
+                                debug!("---SESSION EVENT: {:?}---", session_event);
+                                msg::reply(session_event, 0).expect("Unable to reply");
+                            }
+                        }
                     }
-                    let msg_id = msg::send(session.target_program_id, Action::CheckWord { user, word }, 0)
-                        .expect("Error in sending a message");
-                    session.msg_ids = (msg_id, msg::id());
-                    session.session_status = SessionStatus::MessageSent;
-                    debug!("---SESSION: {:?}---", session);
-                    exec::wait();
                 }
                 SessionAction::CheckGameStatus { user } => {
-
+                    debug!("===CHECK GAME STATUS===");
+                    let query_user = user.clone();
+                    let current_game_status = game_status_map.get(&query_user).expect("Unable to get user");
+                    let session_event = SessionEvent::GameStatus(current_game_status.clone());
+                    debug!("---SESSION EVENT: {:?}---", session_event);
+                    msg::reply(session_event, 0).expect("Unable to reply");
                 }
             }
         }
         SessionStatus::MessageSent => {
-            
+            debug!("===MESSAGE SENT===");
+            msg::reply(SessionEvent::MessageAlreadySent, 0).expect("Error in sending a reply");
         }
         SessionStatus::MessageReceive(event) => {
             debug!("===MESSAGE RECEIVE===");
-            let event = event.clone();
+            let event: Event = event.clone();
             let session_event;
             debug!("---EVENT PARAM: {:?}---", event);
             debug!("---GAME_STATUS_MAP: {:?}---", game_status_map);
-
             match event {
                 Event::GameStarted { user } => {
                     let game_status = GameStatus {
@@ -101,6 +119,7 @@ extern "C" fn handle() {
                             left_attempts: left_attemps,
                             game_result: Some(GameResult::Win),
                         };
+                        session_event = SessionEvent::GameStatus(game_status);
                     } else {
                         if left_attemps <= 0 {
                             game_status = GameStatus{
@@ -108,16 +127,18 @@ extern "C" fn handle() {
                                 left_attempts: left_attemps,
                                 game_result: Some(GameResult::Lose),
                             };
+                            session_event = SessionEvent::GameStatus(game_status);
                         } else {
                             game_status = GameStatus{
                                 left_seconds: INIT_BLOCKS * 60,
                                 left_attempts: current_game_status.left_attempts - 1,
                                 game_result: None,
                             };
+                            game_status_map.insert(user, game_status);
+                            session_event = SessionEvent::WordChecked 
+                            { user, correct_positions: correct_positions.to_vec(), contained_in_word: contained_in_word.to_vec() };
                         }
                     }
-                    game_status_map.insert(user, game_status);
-                    session_event = SessionEvent::WordChecked { user, correct_positions: correct_positions.to_vec(), contained_in_word: contained_in_word.to_vec() };
                 }
             };
             msg::reply(session_event, 0).expect("Error in sending a reply");

@@ -45,7 +45,8 @@ pub enum SessionEvent {
         correct_positions: Vec<u8>,
         contained_in_word: Vec<u8>,
     },
-    GameStatus(GameStatus)
+    GameStatus(GameStatus),
+    MessageAlreadySent,
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
