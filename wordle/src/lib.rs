@@ -4,7 +4,8 @@ use wordle_io::*;
 
 static mut WORDLE: Option<Wordle> = None;
 
-const BANK_OF_WORDS: [&str; 3] = ["house", "human", "horse"];
+// TODO: change back
+const BANK_OF_WORDS: [&str; 3] = ["house", "house", "house"];
 
 #[derive(Default)]
 struct Wordle {

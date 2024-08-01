@@ -2,7 +2,8 @@
 
 use gmeta::{In, InOut, Out, Metadata};
 use gstd::{prelude::*, ActorId, MessageId};
-
+extern crate wordle_io;
+use wordle_io::*;
 pub struct GameSessionMetadata;
 
 impl Metadata for GameSessionMetadata {
@@ -36,14 +37,6 @@ pub enum GameResult {
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub enum SessionEvent {
-    UnStarted {
-        user: ActorId,
-        info: String
-    },
-    AlreadyStarted {
-        user: ActorId,
-        info: String 
-    },
     GameStarted {
         user: ActorId,
     },
@@ -52,27 +45,14 @@ pub enum SessionEvent {
         correct_positions: Vec<u8>,
         contained_in_word: Vec<u8>,
     },
-    GameOver {
-        user: ActorId,
-        result: GameResult
-    }
+    GameStatus(GameStatus)
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub enum SessionStatus {
-    GameInit,
-    GameStart { 
-        user: ActorId
-    },
-    Gaming {
-        user: ActorId,
-        correct_positions: Vec<u8>,
-        contained_in_word: Vec<u8>,
-    },
-    GameOver {
-        user: ActorId,
-        result: GameResult
-    },
+    Waiting,
+    MessageSent,
+    MessageReceive(Event)
 }
 
 type SentMessageId = MessageId;
@@ -83,4 +63,10 @@ pub struct Session {
     pub target_program_id: ActorId,
     pub msg_ids: (SentMessageId, OriginalMessageId),
     pub session_status: SessionStatus,
+}
+#[derive(Debug, Clone, Encode, Decode, TypeInfo)]
+pub struct GameStatus {
+    pub left_seconds: u32,
+    pub left_attempts: u32,
+    pub game_result: Option<GameResult>,
 }

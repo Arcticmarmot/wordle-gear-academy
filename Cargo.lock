@@ -1773,6 +1773,7 @@ dependencies = [
  "gstd",
  "parity-scale-codec",
  "scale-info",
+ "wordle-io",
 ]
 
 [[package]]
