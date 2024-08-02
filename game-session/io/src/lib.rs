@@ -24,9 +24,6 @@ pub enum SessionAction {
         user: ActorId,
         word: String,
     },
-    QueryGameStatus {
-        user: ActorId,
-    },
     CheckGameStatus {
         user: ActorId,
     },
