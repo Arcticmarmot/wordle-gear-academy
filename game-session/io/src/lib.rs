@@ -24,6 +24,9 @@ pub enum SessionAction {
         user: ActorId,
         word: String,
     },
+    QueryGameStatus {
+        user: ActorId,
+    },
     CheckGameStatus {
         user: ActorId,
     },
@@ -46,7 +49,7 @@ pub enum SessionEvent {
         contained_in_word: Vec<u8>,
     },
     GameStatus(GameStatus),
-    MessageAlreadySent,
+    GameError(String),
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
@@ -65,9 +68,19 @@ pub struct Session {
     pub msg_ids: (SentMessageId, OriginalMessageId),
     pub session_status: SessionStatus,
 }
+
+#[derive(Debug, Clone, Encode, Decode, TypeInfo)]
+pub struct WordGuessResult {
+    pub word: String,
+    pub correct_positions: Option<Vec<u8>>,
+    pub contained_in_word: Option<Vec<u8>>,
+}
+
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub struct GameStatus {
-    pub left_seconds: u32,
+    pub start_timestamp: u64,
+    pub left_seconds: u64,
     pub left_attempts: u32,
+    pub history: Vec<WordGuessResult>,
     pub game_result: Option<GameResult>,
 }

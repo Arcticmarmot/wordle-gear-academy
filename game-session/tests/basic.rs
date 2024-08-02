@@ -11,6 +11,7 @@ const USER2: u64 = 9;
 fn test() {
     let system = System::new();
     system.init_logger();
+   
 
     // 初始化Proxy程序和Target程序
     let proxy_program = Program::current(&system);
