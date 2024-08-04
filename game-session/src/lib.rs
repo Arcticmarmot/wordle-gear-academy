@@ -156,7 +156,7 @@ extern "C" fn handle() {
                     let reservation_id: ReservationId = exec::reserve_gas(7e11 as u64, INIT_BLOCKS as u32 * 2)
                         .expect("Unable to reserve gas");
 
-                    msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckWord { user, word: String::from("house") } , 0, INIT_BLOCKS as u32)
+                    msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckGameStatus { user } , 0, INIT_BLOCKS as u32)
                         .expect("Unable to send delayed message");
                     
                     session_event = SessionEvent::GameStarted { user };
