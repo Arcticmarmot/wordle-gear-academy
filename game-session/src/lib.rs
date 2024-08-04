@@ -1,16 +1,18 @@
 #![no_std]
 use collections::HashMap;
 use game_session_io::*;
-use gstd::{exec, msg, prelude::*, ActorId, MessageId, debug};
+use gstd::{debug, exec, msg, prelude::*, ActorId, MessageId, ReservationId};
 use wordle_io::{Action, Event};
 
+// 当前合约状态
 static mut SESSION: Option<Session> = None;
+// 用于保存多用户信息的字典
 static mut GAME_STATUS_MAP: Option<HashMap<ActorId, GameStatus>> = None;
-const INIT_BLOCKS: u64 = 200;
-const SECONDS_BLOCKS_RATIO: u64 = 3;
-const INIT_SECONDS: u64 = INIT_BLOCKS * SECONDS_BLOCKS_RATIO;
-const INIT_ATTEMPS: u32 = 3;
-const WORD_LEN: u32 = 5;
+const INIT_BLOCKS: u64 = 200; // 游戏区块数限制
+const SECONDS_BLOCKS_RATIO: u64 = 3; // 区块数与秒数比率
+const INIT_SECONDS: u64 = INIT_BLOCKS * SECONDS_BLOCKS_RATIO; // 根据区块数和比率计算秒数
+const INIT_ATTEMPS: u32 = 3; // 游戏猜测次数限制
+const WORD_LEN: u32 = 5; // 字母长度
 
 #[no_mangle]
 extern "C" fn init() {
@@ -22,7 +24,7 @@ extern "C" fn init() {
             msg_ids: (MessageId::zero(), MessageId::zero()),
             session_status: SessionStatus::Waiting,
         });
-        GAME_STATUS_MAP = Some(HashMap::new())
+        GAME_STATUS_MAP = Some(HashMap::new());
     }
 }
 
@@ -48,7 +50,6 @@ extern "C" fn handle() {
                         .expect("Error in sending a message");
                     session.msg_ids = (msg_id, msg::id());
                     session.session_status = SessionStatus::MessageSent;
-                    debug!("---SESSION: {:?}---", session);
                     exec::wait();
                 }
                 SessionAction::CheckWord { user, word } => {
@@ -117,7 +118,20 @@ extern "C" fn handle() {
         }
         SessionStatus::MessageSent => {
             debug!("===MESSAGE SENT===");
-            msg::reply(SessionEvent::GameError(String::from("Message has already sent")), 0).expect("Error in sending a reply");
+            match action {
+                SessionAction::StartGame { user } => {
+                    debug!("===MESSAGESENT AND START GAME===");
+                    let msg_id = msg::send(session.target_program_id, Action::StartGame { user }, 0)
+                        .expect("Error in sending a message");
+                    session.msg_ids = (msg_id, msg::id());
+                    session.session_status = SessionStatus::MessageSent;
+                    debug!("---SESSION: {:?}---", session);
+                    exec::wait();
+                }
+                _ => {
+                    msg::reply(SessionEvent::GameError(String::from("Message has already sent, and you could restart the game")), 0).expect("Error in sending a reply");
+                }
+            }
         }
         SessionStatus::MessageReceive(event) => {
             debug!("===MESSAGE RECEIVE===");
@@ -126,9 +140,8 @@ extern "C" fn handle() {
             let event = event.clone();
             let session_event;
             match event {
+                // 返回游戏开始
                 Event::GameStarted { user } => {
-                    msg::send_delayed(exec::program_id(), SessionAction::CheckGameStatus { user }, 0, INIT_BLOCKS as u32)
-                    .expect("Unable to send delayed message");
                     let current_timestamp = get_timestamp();
                     let game_status = GameStatus {
                         start_timestamp: current_timestamp,
@@ -138,8 +151,17 @@ extern "C" fn handle() {
                         game_result: None,
                     };
                     game_status_map.insert(user, game_status);
+
+                    // 使用预存gas发送延迟消息
+                    let reservation_id: ReservationId = exec::reserve_gas(7e11 as u64, INIT_BLOCKS as u32 * 2)
+                        .expect("Unable to reserve gas");
+
+                    msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckWord { user, word: String::from("house") } , 0, INIT_BLOCKS as u32)
+                        .expect("Unable to send delayed message");
+                    
                     session_event = SessionEvent::GameStarted { user };
                 }
+                // 返回查询结果
                 Event::WordChecked { user, ref correct_positions, ref contained_in_word } => {
                     let current_game_status = game_status_map.get_mut(&user).expect("Unable to get user");
                     debug!("---CURRENT GAME STATUS: {:?}---", current_game_status);
@@ -211,10 +233,16 @@ extern "C" fn state() {
     msg::reply(session, 0).expect("Unable to get the state");
 }
 
+/**
+ * 获取当前时间戳
+ */
 fn get_timestamp() -> u64 {
     exec::block_timestamp() / 1000
 }
 
+/**
+ * 计算当前程序剩余秒数
+ */
 fn get_left_seconds(game_status: &GameStatus) -> u64 {
     let current_time = get_timestamp();
     debug!("---TIMESTAMP :{}---", current_time);
