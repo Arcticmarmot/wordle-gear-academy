@@ -70,7 +70,7 @@ extern "C" fn handle() {
                             msg::reply(session_event, 0).expect("Unable to reply");
                         }
                         None => {
-                            let left_seconds = get_left_seconds(&current_game_status);
+                            let left_seconds = get_left_seconds(current_game_status);
                             let left_attempts = current_game_status.left_attempts;
                             if left_seconds > 0 && left_attempts > 0 {
                                 let msg_id = msg::send(
@@ -116,7 +116,7 @@ extern "C" fn handle() {
                     match current_game_status.game_result {
                         Some(GameResult::Win) | Some(GameResult::Lose) => {}
                         None => {
-                            let left_seconds = get_left_seconds(&current_game_status);
+                            let left_seconds = get_left_seconds(current_game_status);
                             if left_seconds > 0 {
                                 current_game_status.left_seconds = left_seconds;
                             } else {
@@ -201,7 +201,7 @@ extern "C" fn handle() {
                         game_status_map.get_mut(&user).expect("Unable to get user");
                     debug!("---CURRENT GAME STATUS: {:?}---", current_game_status);
                     let current_left_attemps = current_game_status.left_attempts;
-                    let left_seconds = get_left_seconds(&current_game_status);
+                    let left_seconds = get_left_seconds(current_game_status);
                     debug!("---LEFT SECONDS: {}---", left_seconds);
 
                     let correct_position_len = correct_positions.len();
@@ -220,17 +220,15 @@ extern "C" fn handle() {
                     if correct_position_len == WORD_LEN as usize {
                         current_game_status.game_result = Some(GameResult::Win);
                         session_event = SessionEvent::GameStatus(current_game_status.clone());
+                    } else if left_seconds == 0 || current_left_attemps == 0 {
+                        current_game_status.game_result = Some(GameResult::Lose);
+                        session_event = SessionEvent::GameStatus(current_game_status.clone());
                     } else {
-                        if left_seconds == 0 || current_left_attemps == 0 {
-                            current_game_status.game_result = Some(GameResult::Lose);
-                            session_event = SessionEvent::GameStatus(current_game_status.clone());
-                        } else {
-                            session_event = SessionEvent::WordChecked {
-                                user,
-                                correct_positions: correct_positions.to_vec(),
-                                contained_in_word: contained_in_word.to_vec(),
-                            };
-                        }
+                        session_event = SessionEvent::WordChecked {
+                            user,
+                            correct_positions: correct_positions.to_vec(),
+                            contained_in_word: contained_in_word.to_vec(),
+                        };
                     }
                 }
             };
