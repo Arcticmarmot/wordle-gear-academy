@@ -1,5 +1,5 @@
 use wordle_io::WordleMetadata;
 
-fn main(){
+fn main() {
     gear_wasm_builder::build_with_metadata::<WordleMetadata>();
 }

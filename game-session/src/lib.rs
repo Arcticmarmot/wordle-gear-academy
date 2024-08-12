@@ -1,7 +1,7 @@
 #![no_std]
 use collections::HashMap;
 use game_session_io::*;
-use gstd::{debug, exec, msg, prelude::*, ActorId, MessageId, ReservationId};
+use gstd::{debug, exec, msg, prelude::*, ActorId, MessageId};
 use wordle_io::{Action, Event};
 
 // 当前合约状态
@@ -153,10 +153,13 @@ extern "C" fn handle() {
                     game_status_map.insert(user, game_status);
 
                     // 使用预存gas发送延迟消息
-                    let reservation_id: ReservationId = exec::reserve_gas(7e11 as u64, INIT_BLOCKS as u32 * 2)
-                        .expect("Unable to reserve gas");
+                    // let reservation_id: ReservationId = exec::reserve_gas(7e11 as u64, INIT_BLOCKS as u32 * 2)
+                    //     .expect("Unable to reserve gas");
 
-                    msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckGameStatus { user } , 0, INIT_BLOCKS as u32)
+                    // msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckGameStatus { user } , 0, INIT_BLOCKS as u32)
+                    //     .expect("Unable to send delayed message");
+                    
+                    msg::send_with_gas_delayed(exec::program_id(), SessionAction::CheckGameStatus { user } , 5_000_000_000, 0, INIT_BLOCKS as u32)
                         .expect("Unable to send delayed message");
                     
                     session_event = SessionEvent::GameStarted { user };

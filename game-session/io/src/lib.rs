@@ -1,6 +1,6 @@
 #![no_std]
 
-use gmeta::{In, InOut, Out, Metadata};
+use gmeta::{In, InOut, Metadata, Out};
 use gstd::{prelude::*, ActorId, MessageId};
 extern crate wordle_io;
 use wordle_io::*;
@@ -17,22 +17,15 @@ impl Metadata for GameSessionMetadata {
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub enum SessionAction {
-    StartGame {
-        user: ActorId,
-    },
-    CheckWord {
-        user: ActorId,
-        word: String,
-    },
-    CheckGameStatus {
-        user: ActorId,
-    },
+    StartGame { user: ActorId },
+    CheckWord { user: ActorId, word: String },
+    CheckGameStatus { user: ActorId },
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
 pub enum GameResult {
     Win,
-    Lose
+    Lose,
 }
 
 #[derive(Debug, Clone, Encode, Decode, TypeInfo)]
@@ -53,7 +46,7 @@ pub enum SessionEvent {
 pub enum SessionStatus {
     Waiting,
     MessageSent,
-    MessageReceive(Event)
+    MessageReceive(Event),
 }
 
 type SentMessageId = MessageId;
