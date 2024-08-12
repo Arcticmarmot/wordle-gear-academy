@@ -7,17 +7,19 @@ const SESSION_PROGRAM_ID: u64 = 1;
 const TARGET_PROGRAM_ID: u64 = 2;
 
 #[test]
-fn test_succeed(){
+fn test_succeed() {
     let system = System::new();
     system.init_logger();
 
     // 初始化Proxy程序和Target程序
-    let proxy_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
-        .with_id(SESSION_PROGRAM_ID)
-        .build(&system);
-    let target_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
-        .with_id(TARGET_PROGRAM_ID)
-        .build(&system);
+    let proxy_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
+            .with_id(SESSION_PROGRAM_ID)
+            .build(&system);
+    let target_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
+            .with_id(TARGET_PROGRAM_ID)
+            .build(&system);
     let init_target_program_result = target_program.send_bytes(USER1, []);
     assert!(!init_target_program_result.main_failed());
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
@@ -67,12 +69,8 @@ fn test_succeed(){
     assert!(!check_word_result_horse.main_failed());
 
     // 检查游戏状态，玩家获胜
-    let check_status_result = proxy_program.send(
-        USER1,
-        SessionAction::CheckGameStatus {
-            user: USER1.into(),
-        },
-    );
+    let check_status_result =
+        proxy_program.send(USER1, SessionAction::CheckGameStatus { user: USER1.into() });
     assert!(!check_status_result.main_failed());
     // let log = Log::builder()
     //     .source(proxy_program.id())
@@ -91,12 +89,14 @@ fn test_delayed_message() {
     system.init_logger();
 
     // 初始化Proxy程序和Target程序
-    let proxy_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
-        .with_id(SESSION_PROGRAM_ID)
-        .build(&system);
-    let target_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
-        .with_id(TARGET_PROGRAM_ID)
-        .build(&system);
+    let proxy_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
+            .with_id(SESSION_PROGRAM_ID)
+            .build(&system);
+    let target_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
+            .with_id(TARGET_PROGRAM_ID)
+            .build(&system);
     let init_target_program_result = target_program.send_bytes(USER1, []);
     assert!(!init_target_program_result.main_failed());
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
@@ -117,27 +117,25 @@ fn test_delayed_message() {
     system.spend_blocks(10);
 
     // 检查游戏状态，玩家失败
-    let check_status_result = proxy_program.send(
-        USER1,
-        SessionAction::CheckGameStatus {
-            user: USER1.into(),
-        },
-    );
+    let check_status_result =
+        proxy_program.send(USER1, SessionAction::CheckGameStatus { user: USER1.into() });
     assert!(!check_status_result.main_failed());
 }
 
 #[test]
-fn test_restart(){
+fn test_restart() {
     let system = System::new();
     system.init_logger();
 
     // 初始化Proxy程序和Target程序
-    let proxy_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
-        .with_id(SESSION_PROGRAM_ID)
-        .build(&system);
-    let target_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
-        .with_id(TARGET_PROGRAM_ID)
-        .build(&system);
+    let proxy_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
+            .with_id(SESSION_PROGRAM_ID)
+            .build(&system);
+    let target_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
+            .with_id(TARGET_PROGRAM_ID)
+            .build(&system);
     let init_target_program_result = target_program.send_bytes(USER1, []);
     assert!(!init_target_program_result.main_failed());
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
@@ -182,12 +180,14 @@ fn test_attempts_run_out() {
     system.init_logger();
 
     // 初始化Proxy程序和Target程序
-    let proxy_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
-        .with_id(SESSION_PROGRAM_ID)
-        .build(&system);
-    let target_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
-        .with_id(TARGET_PROGRAM_ID)
-        .build(&system);
+    let proxy_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
+            .with_id(SESSION_PROGRAM_ID)
+            .build(&system);
+    let target_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
+            .with_id(TARGET_PROGRAM_ID)
+            .build(&system);
     let init_target_program_result = target_program.send_bytes(USER1, []);
     assert!(!init_target_program_result.main_failed());
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
@@ -239,12 +239,8 @@ fn test_attempts_run_out() {
     assert!(!check_word_result.main_failed());
 
     // 检查游戏状态，玩家失败
-    let check_status_result = proxy_program.send(
-        USER1,
-        SessionAction::CheckGameStatus {
-            user: USER1.into(),
-        },
-    );
+    let check_status_result =
+        proxy_program.send(USER1, SessionAction::CheckGameStatus { user: USER1.into() });
     assert!(!check_status_result.main_failed());
 }
 
@@ -254,12 +250,14 @@ fn test_mutiple_user() {
     system.init_logger();
 
     // 初始化Proxy程序和Target程序
-    let proxy_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
-        .with_id(SESSION_PROGRAM_ID)
-        .build(&system);
-    let target_program: Program = ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
-        .with_id(TARGET_PROGRAM_ID)
-        .build(&system);
+    let proxy_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/game_session.opt.wasm")
+            .with_id(SESSION_PROGRAM_ID)
+            .build(&system);
+    let target_program: Program =
+        ProgramBuilder::from_file("../target/wasm32-unknown-unknown/debug/wordle.opt.wasm")
+            .with_id(TARGET_PROGRAM_ID)
+            .build(&system);
     let init_target_program_result = target_program.send_bytes(USER1, []);
     assert!(!init_target_program_result.main_failed());
     let init_proxy_program_result = proxy_program.send(USER1, target_program.id());
@@ -306,6 +304,4 @@ fn test_mutiple_user() {
         },
     );
     assert!(!check_word_result.main_failed());
-    
 }
-

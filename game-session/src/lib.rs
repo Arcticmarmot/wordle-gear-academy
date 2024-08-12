@@ -32,7 +32,11 @@ extern "C" fn init() {
 extern "C" fn handle() {
     debug!("===HANDLE START===");
     let session = unsafe { SESSION.as_mut().expect("The session is not initialized") };
-    let game_status_map = unsafe { GAME_STATUS_MAP.as_mut().expect("The game status map is not initialized") };
+    let game_status_map = unsafe {
+        GAME_STATUS_MAP
+            .as_mut()
+            .expect("The game status map is not initialized")
+    };
 
     debug!("---SESSION: {:?}---", session);
     debug!("---GAME_STATUS_MAP: {:?}---", game_status_map);
@@ -44,22 +48,24 @@ extern "C" fn handle() {
     match &session.session_status {
         SessionStatus::Waiting => {
             match action {
-                SessionAction::StartGame { user} => {
+                SessionAction::StartGame { user } => {
                     debug!("===WAITING AND START GAME===");
-                    let msg_id = msg::send(session.target_program_id, Action::StartGame { user }, 0)
-                        .expect("Error in sending a message");
+                    let msg_id =
+                        msg::send(session.target_program_id, Action::StartGame { user }, 0)
+                            .expect("Error in sending a message");
                     session.msg_ids = (msg_id, msg::id());
                     session.session_status = SessionStatus::MessageSent;
                     exec::wait();
                 }
                 SessionAction::CheckWord { user, word } => {
                     debug!("===WAITING AND CHECK WORD===");
-                    let current_game_status = game_status_map.get_mut(&user)
-                        .expect("Unable to get user");
+                    let current_game_status =
+                        game_status_map.get_mut(&user).expect("Unable to get user");
                     match current_game_status.game_result {
                         Some(GameResult::Win) | Some(GameResult::Lose) => {
                             debug!("===GAME RESULT IS FIXED===");
-                            let session_event = SessionEvent::GameStatus(current_game_status.clone());
+                            let session_event =
+                                SessionEvent::GameStatus(current_game_status.clone());
                             debug!("---SESSION EVENT: {:?}---", session_event);
                             msg::reply(session_event, 0).expect("Unable to reply");
                         }
@@ -67,17 +73,24 @@ extern "C" fn handle() {
                             let left_seconds = get_left_seconds(&current_game_status);
                             let left_attempts = current_game_status.left_attempts;
                             if left_seconds > 0 && left_attempts > 0 {
-                                let msg_id = msg::send(session.target_program_id, Action::CheckWord { user, word: word.clone() }, 0)
-                                    .expect("Error in sending a message");
+                                let msg_id = msg::send(
+                                    session.target_program_id,
+                                    Action::CheckWord {
+                                        user,
+                                        word: word.clone(),
+                                    },
+                                    0,
+                                )
+                                .expect("Error in sending a message");
                                 session.msg_ids = (msg_id, msg::id());
                                 session.session_status = SessionStatus::MessageSent;
                                 current_game_status.left_seconds = left_seconds;
                                 current_game_status.left_attempts = left_attempts - 1;
                                 // 新建猜测历史记录
-                                current_game_status.history.push(WordGuessResult{
+                                current_game_status.history.push(WordGuessResult {
                                     word,
                                     correct_positions: None,
-                                    contained_in_word: None
+                                    contained_in_word: None,
                                 });
                                 debug!("---GAME_STATUS_MAP: {:?}---", game_status_map);
                                 exec::wait();
@@ -87,7 +100,9 @@ extern "C" fn handle() {
                                 if left_seconds == 0 {
                                     current_game_status.left_seconds = 0;
                                 }
-                                let session_event = SessionEvent::GameError(String::from("The left seconds or attemps is over"));
+                                let session_event = SessionEvent::GameError(String::from(
+                                    "The left seconds or attemps is over",
+                                ));
                                 debug!("---SESSION EVENT: {:?}---", session_event);
                                 msg::reply(session_event, 0).expect("Unable to reply");
                             }
@@ -96,11 +111,10 @@ extern "C" fn handle() {
                 }
                 SessionAction::CheckGameStatus { user } => {
                     debug!("===CHECK GAME STATUS===");
-                    let current_game_status = game_status_map.get_mut(&user)
-                        .expect("Unable to get user");
+                    let current_game_status =
+                        game_status_map.get_mut(&user).expect("Unable to get user");
                     match current_game_status.game_result {
-                        Some(GameResult::Win) | Some(GameResult::Lose) => {
-                        }
+                        Some(GameResult::Win) | Some(GameResult::Lose) => {}
                         None => {
                             let left_seconds = get_left_seconds(&current_game_status);
                             if left_seconds > 0 {
@@ -121,15 +135,22 @@ extern "C" fn handle() {
             match action {
                 SessionAction::StartGame { user } => {
                     debug!("===MESSAGESENT AND START GAME===");
-                    let msg_id = msg::send(session.target_program_id, Action::StartGame { user }, 0)
-                        .expect("Error in sending a message");
+                    let msg_id =
+                        msg::send(session.target_program_id, Action::StartGame { user }, 0)
+                            .expect("Error in sending a message");
                     session.msg_ids = (msg_id, msg::id());
                     session.session_status = SessionStatus::MessageSent;
                     debug!("---SESSION: {:?}---", session);
                     exec::wait();
                 }
                 _ => {
-                    msg::reply(SessionEvent::GameError(String::from("Message has already sent, and you could restart the game")), 0).expect("Error in sending a reply");
+                    msg::reply(
+                        SessionEvent::GameError(String::from(
+                            "Message has already sent, and you could restart the game",
+                        )),
+                        0,
+                    )
+                    .expect("Error in sending a reply");
                 }
             }
         }
@@ -158,15 +179,26 @@ extern "C" fn handle() {
 
                     // msg::send_delayed_from_reservation(reservation_id, exec::program_id(), SessionAction::CheckGameStatus { user } , 0, INIT_BLOCKS as u32)
                     //     .expect("Unable to send delayed message");
-                    
-                    msg::send_with_gas_delayed(exec::program_id(), SessionAction::CheckGameStatus { user } , 5_000_000_000, 0, INIT_BLOCKS as u32)
-                        .expect("Unable to send delayed message");
-                    
+
+                    msg::send_with_gas_delayed(
+                        exec::program_id(),
+                        SessionAction::CheckGameStatus { user },
+                        5_000_000_000,
+                        0,
+                        INIT_BLOCKS as u32,
+                    )
+                    .expect("Unable to send delayed message");
+
                     session_event = SessionEvent::GameStarted { user };
                 }
                 // 返回查询结果
-                Event::WordChecked { user, ref correct_positions, ref contained_in_word } => {
-                    let current_game_status = game_status_map.get_mut(&user).expect("Unable to get user");
+                Event::WordChecked {
+                    user,
+                    ref correct_positions,
+                    ref contained_in_word,
+                } => {
+                    let current_game_status =
+                        game_status_map.get_mut(&user).expect("Unable to get user");
                     debug!("---CURRENT GAME STATUS: {:?}---", current_game_status);
                     let current_left_attemps = current_game_status.left_attempts;
                     let left_seconds = get_left_seconds(&current_game_status);
@@ -179,12 +211,13 @@ extern "C" fn handle() {
                     let current_history = &mut current_game_status.history;
                     let current_history_len = current_history.len();
                     current_game_status.left_seconds = left_seconds;
-                    let last_guess = current_history.get_mut(current_history_len - 1)
+                    let last_guess = current_history
+                        .get_mut(current_history_len - 1)
                         .expect("Unable to get last guess");
                     last_guess.correct_positions = Some(correct_positions.to_vec());
                     last_guess.contained_in_word = Some(contained_in_word.to_vec());
 
-                    if correct_position_len == WORD_LEN as usize{
+                    if correct_position_len == WORD_LEN as usize {
                         current_game_status.game_result = Some(GameResult::Win);
                         session_event = SessionEvent::GameStatus(current_game_status.clone());
                     } else {
@@ -192,10 +225,10 @@ extern "C" fn handle() {
                             current_game_status.game_result = Some(GameResult::Lose);
                             session_event = SessionEvent::GameStatus(current_game_status.clone());
                         } else {
-                            session_event = SessionEvent::WordChecked { 
-                                user, 
-                                correct_positions: correct_positions.to_vec(), 
-                                contained_in_word: contained_in_word.to_vec()
+                            session_event = SessionEvent::WordChecked {
+                                user,
+                                correct_positions: correct_positions.to_vec(),
+                                contained_in_word: contained_in_word.to_vec(),
                             };
                         }
                     }
@@ -221,7 +254,7 @@ extern "C" fn handle() {
 extern "C" fn handle_reply() {
     let reply_to = msg::reply_to().expect("Failed to query reply_to data");
     let session = unsafe { SESSION.as_mut().expect("The session is not initialized") };
-    
+
     if reply_to == session.msg_ids.0 {
         let event: Event = msg::load().expect("Unable to decode `Event`");
         session.session_status = SessionStatus::MessageReceive(event);
